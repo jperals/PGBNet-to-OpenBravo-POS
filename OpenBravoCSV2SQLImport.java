@@ -68,9 +68,10 @@ public class OpenBravoCSV2SQLImport
     
     private static void insertProduct(String[] productProperties) throws SQLException {
         String productId = UUID.randomUUID().toString();
+        String productName = productProperties[25].replace("\"", "\\\"");
         int priceBuy = (Integer.parseInt(productProperties[27])/100);
         int priceSell = (Integer.parseInt(productProperties[30])/100);
-        String SQLQuery = "INSERT INTO PRODUCTS (ID, REFERENCE, CODE, NAME, PRICEBUY, PRICESELL, CATEGORY, TAXCAT) VALUES (\"" + productId + "\", \"" + productProperties[24] + "\", \"" + productProperties[26] + "\", \"" + productProperties[25] + "\", " + priceBuy + ", " + priceSell + ", \"000\", \"001\")";
+        String SQLQuery = "INSERT INTO PRODUCTS (ID, REFERENCE, CODE, NAME, PRICEBUY, PRICESELL, CATEGORY, TAXCAT) VALUES (\"" + productId + "\", \"" + productProperties[24] + "\", \"" + productProperties[26] + "\", \"" + productName + "\", " + priceBuy + ", " + priceSell + ", \"000\", \"001\")";
         try {
             //System.out.println(SQLQuery);
             rs = stmt.executeUpdate(SQLQuery);
