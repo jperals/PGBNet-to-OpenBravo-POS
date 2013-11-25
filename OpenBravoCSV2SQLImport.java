@@ -12,7 +12,6 @@ public class OpenBravoCSV2SQLImport
 {
     private static final String configFileName = "config.properties";
     private static final String csvFileName = "plu1.csv";
-    private static final String dbClassName = "com.mysql.jdbc.Driver";
     private static Statement stmt = null;
     private static int rs;
     private static int productCount = 0;
@@ -25,16 +24,21 @@ public class OpenBravoCSV2SQLImport
     }
     
     public static void connectAndStart() throws ClassNotFoundException, IOException, SQLException {
-        Class.forName(dbClassName);
-        Properties properties = new Properties();
         try {
-    		properties.load(new FileInputStream(configFileName));
+            Properties properties = new Properties();
+            properties.load(new FileInputStream(configFileName));
+            Class.forName(properties.getProperty("driverclass"));
             String connectionURL = properties.getProperty("database");
             Connection connection = DriverManager.getConnection(connectionURL,properties);
             System.out.println("Connected to the database");
             stmt = connection.createStatement();
             readAndImportCSV();
             connection.close();
+            System.out.println("Done.");
+            System.out.println("Products added: " + productsAdded);
+            System.out.println("Products skipped: " + productsSkipped);
+            System.out.println("Total: " + productCount);
+            System.out.println(productsWithoutCode.size() + " products had a barcode full of zeros, and an incremental number was used instead.");
     	} catch (IOException ex) {
     		ex.printStackTrace();
         }
@@ -48,11 +52,6 @@ public class OpenBravoCSV2SQLImport
                 }
                 stmt = null;
             }
-            System.out.println("Done.");
-            System.out.println("Products added: " + productsAdded);
-            System.out.println("Products skipped: " + productsSkipped);
-            System.out.println("Total: " + productCount);
-            System.out.println(productsWithoutCode.size() + " products had a barcode full of zeros, and an incremental number was used instead.");
         }
     }
     
@@ -78,7 +77,7 @@ public class OpenBravoCSV2SQLImport
         
     private static void insertProduct(String[] productProperties) throws SQLException {
         String barcode = productProperties[26];
-        if(barcode.equals("0000000000000") || barcode.equals("") {
+        if(barcode.equals("0000000000000") || barcode.equals("")) {
             productsWithoutCode.add(productProperties);
         }
         else {
