@@ -17,6 +17,7 @@ public class OpenBravoCSV2SQLImport
     private static int productCount = 0;
     private static int productsAdded = 0;
     private static int productsSkipped = 0;
+    private static int productsWithoutCode = 0;
 
     public static void main(String[] args) throws ClassNotFoundException, IOException, SQLException {
         connectAndStart();
@@ -49,7 +50,8 @@ public class OpenBravoCSV2SQLImport
             System.out.println("Done.");
             System.out.println("Products added: " + productsAdded);
             System.out.println("Products skipped: " + productsSkipped);
-            System.out.println("Total " + productCount);
+            System.out.println("Total: " + productCount);
+            System.out.println(productsWithoutCode + " products had a barcode full of zeros, and an incremental number was used instead.");
         }
     }
     
@@ -71,10 +73,22 @@ public class OpenBravoCSV2SQLImport
         String productName = productProperties[25].replace("\"", "\\\"");
         int priceBuy = (Integer.parseInt(productProperties[27])/100);
         int priceSell = (Integer.parseInt(productProperties[30])/100);
-        String SQLQuery = "INSERT INTO PRODUCTS (ID, REFERENCE, CODE, NAME, PRICEBUY, PRICESELL, CATEGORY, TAXCAT) VALUES (\"" + productId + "\", \"" + productProperties[24] + "\", \"" + productProperties[26] + "\", \"" + productName + "\", " + priceBuy + ", " + priceSell + ", \"000\", \"001\")";
+        String barcode = productProperties[26];
+        if(barcode.equals("0000000000000")) {
+            barcode = String.format("%013d", productsWithoutCode);
+            productsWithoutCode++;
+        }
+        String SQLQuery = "INSERT INTO PRODUCTS (ID, REFERENCE, CODE, NAME, PRICEBUY, PRICESELL, CATEGORY, TAXCAT) VALUES (\"" + productId + "\", \"" + productProperties[24] + "\", \"" + barcode + "\", \"" + productName + "\", " + priceBuy + ", " + priceSell + ", \"000\", \"001\")";
         try {
-            //System.out.println(SQLQuery);
             rs = stmt.executeUpdate(SQLQuery);
+            if (rs > 0) {
+                productsAdded++;
+                System.out.println("Product " + productCount + " added: \"" + productProperties[25] + "\"");
+            }
+            else {
+                productsSkipped++;
+                System.out.println("WARNING: Product not added: " + productProperties[25]);
+            }
             rs = stmt.executeUpdate("INSERT INTO PRODUCTS_CAT (PRODUCT) VALUES (\"" + productId + "\")");
         }
         catch (SQLException ex) {
@@ -85,14 +99,6 @@ public class OpenBravoCSV2SQLImport
         }
         finally {
             productCount++;
-            if (rs > 0) {
-                productsAdded++;
-                System.out.println("Product " + productCount + " successfully added: " + productProperties[25]);
-            }
-            else {
-                productsSkipped++;
-                System.out.println("WARNING: Product not added: " + productProperties[25]);
-            }
         }
     }
 }
